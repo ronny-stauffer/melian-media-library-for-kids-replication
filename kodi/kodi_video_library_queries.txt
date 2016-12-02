@@ -1,0 +1,7 @@
+select GROUP_CONCAT(concat('genre:', genre.name) separator '; ') from genre_link join genre on genre.genre_id = genre_link.genre_id where genre_link.media_id = 8 and genre_link.media_type = 'musicvideo';
+
+select GROUP_CONCAT(concat(tag_type, ':', tag) separator '; ') from (
+select 'genre' as tag_type, genre.name as tag from genre_link join genre on genre.genre_id = genre_link.genre_id where genre_link.media_id = $(curTriggerValue).idMVideo and genre_link.media_type = 'musicvideo'
+union
+select 'tag' as tag_type, tag.name as tag from tag_link join tag on tag.tag_id = tag_link.tag_id where tag_link.media_id = $(curTriggerValue).idMVideo and tag_link.media_type = 'musicvideo'
+) as a;

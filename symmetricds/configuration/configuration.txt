@@ -1,0 +1,233 @@
+> ... -Dhost.name=arcturus -Dip.address=10.20.34.66 ...
+> ... -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005 ... -cp ...
+
+
+Open registration for the client node
+> symadmin.bat --engine media_library open-registration media_library_kids 001
+Opened registration for node group of 'media_library_kids' external ID of '001'
+
+Start SymmetricDS
+> sym.bat
+
+// Node Groups
+insert into sym_node_group (node_group_id) values ('media_library');
+insert into sym_node_group (node_group_id) values ('media_library_kids');
+
+// Node Group Link
+insert into sym_node_group_link (source_node_group_id, target_node_group_id, data_event_action)
+	values ('media_library', 'media_library_kids', 'P');
+
+// Channel (= Pipe)
+insert into sym_channel (channel_id, processing_order, max_batch_size, enabled, description)
+	values('channel', 1, 100000, 1, 'files data');
+// Source Trigger
+insert into sym_trigger (trigger_id, source_table_name, channel_id, custom_on_delete_text, last_update_time, create_time)
+	values('actors_trigger', 'actor', 'channel', 'DELETE FROM art WHERE media_id=old.actor_id AND media_type IN (\'actor\',\'artist\',\'writer\',\'director\');', current_timestamp, current_timestamp);
+insert into sym_trigger (trigger_id, source_table_name, channel_id, last_update_time, create_time)
+	values('actor_links_trigger', 'actor_link', 'channel', current_timestamp, current_timestamp);
+insert into sym_trigger (trigger_id, source_table_name, channel_id, last_update_time, create_time)
+	values('art_trigger', 'art', 'channel', current_timestamp, current_timestamp);
+insert into sym_trigger (trigger_id, source_table_name, channel_id, last_update_time, create_time)
+	values('bookmarks_trigger', 'bookmark', 'channel', current_timestamp, current_timestamp);
+insert into sym_trigger (trigger_id, source_table_name, channel_id, last_update_time, create_time)
+	values('countries_trigger', 'country', 'channel', current_timestamp, current_timestamp);
+insert into sym_trigger (trigger_id, source_table_name, channel_id, last_update_time, create_time)
+	values('country_links_trigger', 'country_link', 'channel', current_timestamp, current_timestamp);
+insert into sym_trigger (trigger_id, source_table_name, channel_id, last_update_time, create_time)
+	values('director_links_trigger', 'director_link', 'channel', current_timestamp, current_timestamp);
+insert into sym_trigger (trigger_id, source_table_name, channel_id, custom_on_delete_text, last_update_time, create_time)
+	values('episodes_trigger', 'episode', 'channel', 'DELETE FROM actor_link WHERE media_id=old.idEpisode AND media_type=\'episode\'; DELETE FROM director_link WHERE media_id=old.idEpisode AND media_type=\'episode\'; DELETE FROM writer_link WHERE media_id=old.idEpisode AND media_type=\'episode\'; DELETE FROM art WHERE media_id=old.idEpisode AND media_type=\'episode\';', current_timestamp, current_timestamp);
+insert into sym_trigger (trigger_id, source_table_name, channel_id, custom_on_delete_text, last_update_time, create_time)
+	values('files_trigger', 'files', 'channel', 'DELETE FROM bookmark WHERE idFile=old.idFile; DELETE FROM settings WHERE idFile=old.idFile; DELETE FROM stacktimes WHERE idFile=old.idFile; DELETE FROM streamdetails WHERE idFile=old.idFile;', current_timestamp, current_timestamp);
+insert into sym_trigger (trigger_id, source_table_name, channel_id, last_update_time, create_time)
+	values('genres_trigger', 'genre', 'channel', current_timestamp, current_timestamp);
+insert into sym_trigger (trigger_id, source_table_name, channel_id, last_update_time, create_time)
+	values('genre_links_trigger', 'genre_link', 'channel', current_timestamp, current_timestamp);
+insert into sym_trigger (trigger_id, source_table_name, channel_id, custom_on_delete_text, last_update_time, create_time)
+	values('movies_trigger', 'movie', 'channel', 'DELETE FROM genre_link WHERE media_id=old.idMovie AND media_type=\'movie\'; DELETE FROM actor_link WHERE media_id=old.idMovie AND media_type=\'movie\'; DELETE FROM director_link WHERE media_id=old.idMovie AND media_type=\'movie\'; DELETE FROM studio_link WHERE media_id=old.idMovie AND media_type=\'movie\'; DELETE FROM country_link WHERE media_id=old.idMovie AND media_type=\'movie\'; DELETE FROM writer_link WHERE media_id=old.idMovie AND media_type=\'movie\'; DELETE FROM movielinktvshow WHERE idMovie=old.idMovie; DELETE FROM art WHERE media_id=old.idMovie AND media_type=\'movie\'; DELETE FROM tag_link WHERE media_id=old.idMovie AND media_type=\'movie\';', current_timestamp, current_timestamp);
+insert into sym_trigger (trigger_id, source_table_name, channel_id, last_update_time, create_time)
+	values('movie_tv_show_links_trigger', 'movielinktvshow', 'channel', current_timestamp, current_timestamp);
+insert into sym_trigger (trigger_id, source_table_name, channel_id, external_select, custom_on_delete_text, last_update_time, create_time)
+	values('music_videos_trigger', 'musicvideo', 'channel',
+		'select GROUP_CONCAT(concat(tag_type, \':\', tag) separator \'; \') from (
+		select \'genre\' as tag_type, genre.name as tag from genre_link join genre on genre.genre_id = genre_link.genre_id where genre_link.media_id = $(curTriggerValue).idMVideo and genre_link.media_type = \'musicvideo\'
+		union
+		select \'tag\' as tag_type, tag.name as tag from tag_link join tag on tag.tag_id = tag_link.tag_id where tag_link.media_id = $(curTriggerValue).idMVideo and tag_link.media_type = \'musicvideo\'
+		) as a;',
+		'DELETE FROM actor_link WHERE media_id=old.idMVideo AND media_type=\'musicvideo\'; DELETE FROM director_link WHERE media_id=old.idMVideo AND media_type=\'musicvideo\'; DELETE FROM genre_link WHERE media_id=old.idMVideo AND media_type=\'musicvideo\'; DELETE FROM studio_link WHERE media_id=old.idMVideo AND media_type=\'musicvideo\'; DELETE FROM art WHERE media_id=old.idMVideo AND media_type=\'musicvideo\'; DELETE FROM tag_link WHERE media_id=old.idMVideo AND media_type=\'musicvideo\';',
+		current_timestamp, current_timestamp);
+insert into sym_trigger (trigger_id, source_table_name, channel_id, last_update_time, create_time)
+	values('paths_trigger', 'path', 'channel', current_timestamp, current_timestamp);
+insert into sym_trigger (trigger_id, source_table_name, channel_id, custom_on_delete_text, last_update_time, create_time)
+	values('seasons_trigger', 'seasons', 'channel', 'DELETE FROM art WHERE media_id=old.idSeason AND media_type=\'season\';', current_timestamp, current_timestamp);
+insert into sym_trigger (trigger_id, source_table_name, channel_id, custom_on_delete_text, last_update_time, create_time)
+	values('sets_trigger', 'sets', 'channel', 'DELETE FROM art WHERE media_id=old.idSet AND media_type=\'set\';', current_timestamp, current_timestamp);
+insert into sym_trigger (trigger_id, source_table_name, channel_id, last_update_time, create_time)
+	values('settings_trigger', 'settings', 'channel', current_timestamp, current_timestamp);
+insert into sym_trigger (trigger_id, source_table_name, channel_id, last_update_time, create_time)
+	values('stack_times_trigger', 'stacktimes', 'channel', current_timestamp, current_timestamp);
+insert into sym_trigger (trigger_id, source_table_name, channel_id, last_update_time, create_time)
+	values('stream_details_trigger', 'streamdetails', 'channel', current_timestamp, current_timestamp);
+insert into sym_trigger (trigger_id, source_table_name, channel_id, last_update_time, create_time)
+	values('studios_trigger', 'studio', 'channel', current_timestamp, current_timestamp);
+insert into sym_trigger (trigger_id, source_table_name, channel_id, last_update_time, create_time)
+	values('studio_links_trigger', 'studio_link', 'channel', current_timestamp, current_timestamp);
+insert into sym_trigger (trigger_id, source_table_name, channel_id, last_update_time, create_time)
+	values('tags_trigger', 'tag', 'channel', current_timestamp, current_timestamp);
+insert into sym_trigger (trigger_id, source_table_name, channel_id, custom_on_delete_text, last_update_time, create_time)
+	values('tag_links_trigger', 'tag_link', 'channel', 'DELETE FROM tag WHERE tag_id=old.tag_id AND tag_id NOT IN (SELECT DISTINCT tag_id FROM tag_link);', current_timestamp, current_timestamp);
+insert into sym_trigger (trigger_id, source_table_name, channel_id, custom_on_delete_text, last_update_time, create_time)
+	values('tv_shows_trigger', 'tvshow', 'channel', 'DELETE FROM actor_link WHERE media_id=old.idShow AND media_type=\'tvshow\'; DELETE FROM director_link WHERE media_id=old.idShow AND media_type=\'tvshow\'; DELETE FROM studio_link WHERE media_id=old.idShow AND media_type=\'tvshow\'; DELETE FROM tvshowlinkpath WHERE idShow=old.idShow; DELETE FROM genre_link WHERE media_id=old.idShow AND media_type=\'tvshow\'; DELETE FROM movielinktvshow WHERE idShow=old.idShow; DELETE FROM seasons WHERE idShow=old.idShow; DELETE FROM art WHERE media_id=old.idShow AND media_type=\'tvshow\'; DELETE FROM tag_link WHERE media_id=old.idShow AND media_type=\'tvshow\';', current_timestamp, current_timestamp);
+insert into sym_trigger (trigger_id, source_table_name, channel_id, last_update_time, create_time)
+	values('tv_show_path_links_trigger', 'tvshowlinkpath', 'channel', current_timestamp, current_timestamp);
+insert into sym_trigger (trigger_id, source_table_name, channel_id, last_update_time, create_time)
+	values('versions_trigger', 'version', 'channel', current_timestamp, current_timestamp);
+insert into sym_trigger (trigger_id, source_table_name, channel_id, last_update_time, create_time)
+	values('writer_links_trigger', 'writer_link', 'channel', current_timestamp, current_timestamp);
+
+// Router
+insert into sym_router (router_id, source_node_group_id, target_node_group_id, router_type,create_time, last_update_time)
+	values('media_library_to_media_library_kids_router', 'media_library', 'media_library_kids', 'default', current_timestamp, current_timestamp); // or 'kidsMediaLibraryReplicationDataRouter' instead of 'default'
+
+// Source Trigger / Router Links
+insert into sym_trigger_router (trigger_id, router_id, initial_load_order, last_update_time, create_time)
+	values('actors_trigger', 'media_library_to_media_library_kids_router', 200, current_timestamp, current_timestamp);
+insert into sym_trigger_router (trigger_id, router_id, initial_load_order, last_update_time, create_time)
+	values('actor_links_trigger', 'media_library_to_media_library_kids_router', 200, current_timestamp, current_timestamp);
+insert into sym_trigger_router (trigger_id, router_id, initial_load_order, last_update_time, create_time)
+	values('art_trigger', 'media_library_to_media_library_kids_router', 200, current_timestamp, current_timestamp);
+insert into sym_trigger_router (trigger_id, router_id, initial_load_order, last_update_time, create_time)
+	values('bookmarks_trigger', 'media_library_to_media_library_kids_router', 200, current_timestamp, current_timestamp);
+insert into sym_trigger_router (trigger_id, router_id, initial_load_order, last_update_time, create_time)
+	values('countries_trigger', 'media_library_to_media_library_kids_router', 200, current_timestamp, current_timestamp);
+insert into sym_trigger_router (trigger_id, router_id, initial_load_order, last_update_time, create_time)
+	values('country_links_trigger', 'media_library_to_media_library_kids_router', 200, current_timestamp, current_timestamp);
+insert into sym_trigger_router (trigger_id, router_id, initial_load_order, last_update_time, create_time)
+	values('director_links_trigger', 'media_library_to_media_library_kids_router', 200, current_timestamp, current_timestamp);
+insert into sym_trigger_router (trigger_id, router_id, initial_load_order, last_update_time, create_time)
+	values('episodes_trigger', 'media_library_to_media_library_kids_router', 200, current_timestamp, current_timestamp);
+insert into sym_trigger_router (trigger_id, router_id, initial_load_order, last_update_time, create_time)
+	values('files_trigger', 'media_library_to_media_library_kids_router', 200, current_timestamp, current_timestamp);
+insert into sym_trigger_router (trigger_id, router_id, initial_load_order, last_update_time, create_time)
+	values('genres_trigger', 'media_library_to_media_library_kids_router', 200, current_timestamp, current_timestamp);
+insert into sym_trigger_router (trigger_id, router_id, initial_load_order, last_update_time, create_time)
+	values('genre_links_trigger', 'media_library_to_media_library_kids_router', 200, current_timestamp, current_timestamp);
+insert into sym_trigger_router (trigger_id, router_id, initial_load_order, last_update_time, create_time)
+	values('movies_trigger', 'media_library_to_media_library_kids_router', 200, current_timestamp, current_timestamp);
+insert into sym_trigger_router (trigger_id, router_id, initial_load_order, last_update_time, create_time)
+	values('movie_tv_show_links_trigger', 'media_library_to_media_library_kids_router', 200, current_timestamp, current_timestamp);
+insert into sym_trigger_router (trigger_id, router_id, initial_load_order, last_update_time, create_time)
+	values('music_videos_trigger', 'media_library_to_media_library_kids_router', 200, current_timestamp, current_timestamp);
+insert into sym_trigger_router (trigger_id, router_id, initial_load_order, last_update_time, create_time)
+	values('paths_trigger', 'media_library_to_media_library_kids_router', 200, current_timestamp, current_timestamp);
+insert into sym_trigger_router (trigger_id, router_id, initial_load_order, last_update_time, create_time)
+	values('seasons_trigger', 'media_library_to_media_library_kids_router', 200, current_timestamp, current_timestamp);
+insert into sym_trigger_router (trigger_id, router_id, initial_load_order, last_update_time, create_time)
+	values('sets_trigger', 'media_library_to_media_library_kids_router', 200, current_timestamp, current_timestamp);
+insert into sym_trigger_router (trigger_id, router_id, initial_load_order, last_update_time, create_time)
+	values('settings_trigger', 'media_library_to_media_library_kids_router', 200, current_timestamp, current_timestamp);
+insert into sym_trigger_router (trigger_id, router_id, initial_load_order, last_update_time, create_time)
+	values('stack_times_trigger', 'media_library_to_media_library_kids_router', 200, current_timestamp, current_timestamp);
+insert into sym_trigger_router (trigger_id, router_id, initial_load_order, last_update_time, create_time)
+	values('stream_details_trigger', 'media_library_to_media_library_kids_router', 200, current_timestamp, current_timestamp);
+insert into sym_trigger_router (trigger_id, router_id, initial_load_order, last_update_time, create_time)
+	values('studios_trigger', 'media_library_to_media_library_kids_router', 200, current_timestamp, current_timestamp);
+insert into sym_trigger_router (trigger_id, router_id, initial_load_order, last_update_time, create_time)
+	values('studio_links_trigger', 'media_library_to_media_library_kids_router', 200, current_timestamp, current_timestamp);
+insert into sym_trigger_router (trigger_id, router_id, initial_load_order, last_update_time, create_time)
+	values('tags_trigger', 'media_library_to_media_library_kids_router', 200, current_timestamp, current_timestamp);
+insert into sym_trigger_router (trigger_id, router_id, initial_load_order, last_update_time, create_time)
+	values('tag_links_trigger', 'media_library_to_media_library_kids_router', 200, current_timestamp, current_timestamp);
+insert into sym_trigger_router (trigger_id, router_id, initial_load_order, last_update_time, create_time)
+	values('tv_shows_trigger', 'media_library_to_media_library_kids_router', 200, current_timestamp, current_timestamp);
+insert into sym_trigger_router (trigger_id, router_id, initial_load_order, last_update_time, create_time)
+	values('tv_show_path_links_trigger', 'media_library_to_media_library_kids_router', 200, current_timestamp, current_timestamp);
+insert into sym_trigger_router (trigger_id, router_id, initial_load_order, last_update_time, create_time)
+	values('versions_trigger', 'media_library_to_media_library_kids_router', 200, current_timestamp, current_timestamp);
+insert into sym_trigger_router (trigger_id, router_id, initial_load_order, last_update_time, create_time)
+	values('writer_links_trigger', 'media_library_to_media_library_kids_router', 200, current_timestamp, current_timestamp);
+
+// Initial Load Request																				// Initial Loads funktionieren auch ohne diese Requests? Evtl. nur weitere Spezifikation...?
+insert into sym_table_reload_request (target_node_id, source_node_id, trigger_id, router_id, create_time, last_update_time)
+     values ('media_library', 'media_library_kids', 'ALL', 'ALL', current_timestamp, current_timestamp);
+
+	 
+	 
+	 
+	 
+Request initial load
+> symadmin --engine media_library reload-node 001
+	or
+update sym_node_security set initial_load_enabled = 1 where node_id = '001';						// on 'media_library' engine's database
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Table 'files':
+	Trigger 'delete_file':
+		DDL: CREATE DEFINER=`kodi`@`%` TRIGGER delete_file AFTER DELETE ON files FOR EACH ROW BEGIN DELETE FROM bookmark WHERE idFile=old.idFile; DELETE FROM settings WHERE idFile=old.idFile; DELETE FROM stacktimes WHERE idFile=old.idFile; DELETE FROM streamdetails WHERE idFile=old.idFile; END
+		Statements: DELETE FROM bookmark WHERE idFile=old.idFile; DELETE FROM settings WHERE idFile=old.idFile; DELETE FROM stacktimes WHERE idFile=old.idFile; DELETE FROM streamdetails WHERE idFile=old.idFile;
+
+
+actor
+	DELETE FROM art WHERE media_id=old.actor_id AND media_type IN ('actor','artist','writer','director');
+actor_link
+art
+bookmark
+country
+country_link
+director_link
+episodes
+	DELETE FROM actor_link WHERE media_id=old.idEpisode AND media_type='episode'; DELETE FROM director_link WHERE media_id=old.idEpisode AND media_type='episode'; DELETE FROM writer_link WHERE media_id=old.idEpisode AND media_type='episode'; DELETE FROM art WHERE media_id=old.idEpisode AND media_type='episode';
+files
+	DELETE FROM bookmark WHERE idFile=old.idFile; DELETE FROM settings WHERE idFile=old.idFile; DELETE FROM stacktimes WHERE idFile=old.idFile; DELETE FROM streamdetails WHERE idFile=old.idFile;
+genre
+genre_link
+movie
+	DELETE FROM genre_link WHERE media_id=old.idMovie AND media_type='movie'; DELETE FROM actor_link WHERE media_id=old.idMovie AND media_type='movie'; DELETE FROM director_link WHERE media_id=old.idMovie AND media_type='movie'; DELETE FROM studio_link WHERE media_id=old.idMovie AND media_type='movie'; DELETE FROM country_link WHERE media_id=old.idMovie AND media_type='movie'; DELETE FROM writer_link WHERE media_id=old.idMovie AND media_type='movie'; DELETE FROM movielinktvshow WHERE idMovie=old.idMovie; DELETE FROM art WHERE media_id=old.idMovie AND media_type='movie'; DELETE FROM tag_link WHERE media_id=old.idMovie AND media_type='movie';
+movielinktvshow
+musicvideo
+	DELETE FROM actor_link WHERE media_id=old.idMVideo AND media_type='musicvideo'; DELETE FROM director_link WHERE media_id=old.idMVideo AND media_type='musicvideo'; DELETE FROM genre_link WHERE media_id=old.idMVideo AND media_type='musicvideo'; DELETE FROM studio_link WHERE media_id=old.idMVideo AND media_type='musicvideo'; DELETE FROM art WHERE media_id=old.idMVideo AND media_type='musicvideo'; DELETE FROM tag_link WHERE media_id=old.idMVideo AND media_type='musicvideo';
+path
+seasons
+	DELETE FROM art WHERE media_id=old.idSeason AND media_type='season';
+sets
+	DELETE FROM art WHERE media_id=old.idSet AND media_type='set';
+settings
+stacktimes
+streamdetails
+studio
+studio_link
+tag
+tag_link
+	DELETE FROM tag WHERE tag_id=old.tag_id AND tag_id NOT IN (SELECT DISTINCT tag_id FROM tag_link);
+tvshow
+	DELETE FROM actor_link WHERE media_id=old.idShow AND media_type='tvshow'; DELETE FROM director_link WHERE media_id=old.idShow AND media_type='tvshow'; DELETE FROM studio_link WHERE media_id=old.idShow AND media_type='tvshow'; DELETE FROM tvshowlinkpath WHERE idShow=old.idShow; DELETE FROM genre_link WHERE media_id=old.idShow AND media_type='tvshow'; DELETE FROM movielinktvshow WHERE idShow=old.idShow; DELETE FROM seasons WHERE idShow=old.idShow; DELETE FROM art WHERE media_id=old.idShow AND media_type='tvshow'; DELETE FROM tag_link WHERE media_id=old.idShow AND media_type='tvshow';
+tvshowlinkpath
+version
+writer_link
+
+
+
+
+
+
+drop trigger delete_person;
+drop trigger delete_episode;
+drop trigger delete_file;
+drop trigger delete_movie;
+drop trigger delete_musicvideo;
+drop trigger delete_season;
+drop trigger delete_set;
+drop trigger delete_tag;
+drop trigger delete_tvshow;
